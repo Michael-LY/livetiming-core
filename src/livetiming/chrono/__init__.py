@@ -161,6 +161,14 @@ class PitOutEvent(CarEvent):
         return self._updated_state(state, car)
 
 
+class FinishEvent(CarEvent):
+    def __call__(self, state):
+        car = self._get_car(state)
+        self._set_field(car, Stat.STATE, "FIN")
+
+        return self._updated_state(state, car)
+
+
 class DriverChangeEvent(CarEvent):
     def __init__(self, timestamp, colspec, race_num, driver):
         super(DriverChangeEvent, self).__init__(timestamp, colspec, race_num)

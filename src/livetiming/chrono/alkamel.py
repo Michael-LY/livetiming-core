@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from livetiming.chrono import DriverChangeEvent, FlagEvent, LaptimeEvent, PitInEvent, PitOutEvent, SectorEvent
+from livetiming.chrono import DriverChangeEvent, FinishEvent, FlagEvent, LaptimeEvent, PitInEvent, PitOutEvent, SectorEvent
 from livetiming.messages import CarPitMessage, DriverChangeMessage, FastLapMessage, FlagChangeMessage
 from livetiming.racing import Stat
 
@@ -166,6 +166,11 @@ def create_events(args):
             events.append(
                 LaptimeEvent(datestamp, COLSPEC, race_num, lap_time, _parseFlags(row[' LAP_IMPROVEMENT']))
             )
+
+            if row['FLAG_AT_FL'] == 'FF':
+                events.append(
+                    FinishEvent(datestamp, COLSPEC, race_num)
+                )
 
             if not prev_race_num or prev_race_num == race_num:
                 prev_row = row
