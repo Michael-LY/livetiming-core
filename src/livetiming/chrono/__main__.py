@@ -1,8 +1,10 @@
-from livetiming.chrono import alkamel, tsl
+from livetiming.chrono import alkamel, tsl, RaceControlMessageEvent
 from livetiming_orchestration.dvr import DirectoryTimingRecorder
 from livetiming.racing import Stat
 
 import argparse
+import json
+import math
 import sys
 import uuid
 
@@ -32,6 +34,7 @@ def _parse_args():
     parser.add_argument('--description', '-d', help='Session description', default='Converted chrono dump')
     parser.add_argument('--name', '-n', help='Session name', default='Converted')
     parser.add_argument('--debug', help='Create debugging files', action='store_true')
+    parser.add_argument('--race-control', help='Race control messages in fiawec.tv format')
 
     return parser.parse_args()
 
@@ -40,7 +43,18 @@ def main():
     args = _parse_args()
     initial_state = args.create_initial_state(args, [0, 0, 0, 0, 0])
 
-    events = sorted(args.create_events(args), key=lambda e: e.timestamp)
+    data_events = args.create_events(args)
+
+    if args.race_control:
+        with open(args.race_control, 'r') as rc_file:
+            rc = json.load(rc_file)
+            for r in rc:
+                timestamp = r['dayTime'] / 1000
+                data_events.append(
+                    RaceControlMessageEvent(timestamp, r['text'])
+                )
+
+    events = sorted(data_events, key=lambda e: e.timestamp)
     evt_count = len(events)
 
     print("Generated {} events".format(evt_count))
@@ -54,7 +68,7 @@ def main():
 
     working_state = initial_state
 
-    state = derive_state_from_working(args, working_state, {})
+    state = derive_state_from_working(args, working_state)
 
     if hasattr(args, 'duration'):
         state['session']['timeRemain'] = args.duration
@@ -68,9 +82,9 @@ def main():
         'colSpec': [s.value if isinstance(s, Stat) else s for s in args.colspec],
         'hidden': True
     })
-    next_frame_threshold = 0
 
     session_start_time = args.get_start_time(args)
+    next_frame_threshold = 0
     recorder.writeState(state, session_start_time)
 
     for idx, evt in enumerate(events):
@@ -90,14 +104,16 @@ def main():
 
         working_state['session']['timeElapsed'] = elapsed
 
-        new_state = derive_state_from_working(args, working_state, state)
+        new_state = derive_state_from_working(args, working_state)
 
         if hasattr(args, 'duration'):
             new_state['session']['timeRemain'] = int(args.duration) - elapsed
 
-        new_state['messages'] = _generate_messages(message_generators, evt_time * 1000, state, new_state)
+        new_messages = _generate_messages(message_generators, evt_time * 1000, state, new_state)
+        new_state['messages'] = (new_messages + new_state['messages'])[0:100]
+        working_state['messages'] = new_state['messages']
 
-        if evt_time > next_frame_threshold:
+        if evt_time > next_frame_threshold and evt_time >= session_start_time:
             calculate_gap_and_int(args.colspec, new_state)
             recorder.writeState(new_state, int(evt_time))
             next_frame_threshold = evt_time + 1
@@ -111,11 +127,11 @@ def main():
     print("Created {} (UUID {})".format(of, my_uuid))
 
 
-def derive_state_from_working(args, working_state, prev_state):
+def derive_state_from_working(args, working_state):
     return {
         'cars': args.sort_cars(args, list(working_state['cars'].values())),
         'session': working_state['session'],
-        'messages': prev_state.get('messages', [])
+        'messages': working_state.get('messages', [])
     }
 
 
@@ -184,7 +200,7 @@ def _generate_messages(generators, timestamp, old_state, new_state):
     # Fix up message timestamps
     new_messages = [[timestamp] + m[1:] for m in new_messages]
 
-    return (new_messages + old_state['messages'])[0:100]
+    return new_messages
 
 
 main()

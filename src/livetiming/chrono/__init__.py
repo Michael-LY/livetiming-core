@@ -1,7 +1,9 @@
-from datetime import date, datetime
+from datetime import datetime
 from livetiming.racing import Stat
 
 import copy
+import math
+import re
 
 
 class Event(object):
@@ -32,6 +34,27 @@ class FlagEvent(Event):
     def __str__(self):
         return f"{super().__str__()} => {self.flagState}"
 
+
+CAR_NUMBER_REGEX = re.compile("car #? ?(?P<race_num>[0-9]+)", re.IGNORECASE)
+
+class RaceControlMessageEvent(Event):
+    def __init__(self, timestamp, message):
+        super().__init__(timestamp)
+        self.message = message
+
+    def __call__(self, state):
+        msg = [math.floor(self.timestamp * 1000), "Race Control", self.message, "raceControl"]
+
+        hasCarNum = CAR_NUMBER_REGEX.search(self.message)
+        if hasCarNum:
+            msg.append(hasCarNum.group('race_num'))
+
+        new_state = copy.deepcopy(state)
+        new_state['messages'] = [msg] + new_state['messages']
+        return new_state
+
+    def __str__(self):
+        return f"{super().__str__()} => {self.message}"
 
 class CarEvent(Event):
     def __init__(self, timestamp, colspec, race_num):

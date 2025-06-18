@@ -112,12 +112,14 @@ def generate_parser_args(parser):
     parser.add_argument('--chronological-analysis', '-c', help='Chronological analysis CSV file', required=True)
     parser.add_argument('--start-date', '-s', help='Date at start of session', required=True)
     parser.add_argument('--duration', '-d', help='Duration (in seconds) of session', required=True)
+    parser.add_argument('--tz-adjustment', help='Add or remove time to convert timestamps to UTC', default=0, type=int)
 
 
 def create_events(args):
     events = []
 
     start_time = get_start_time(args, False)
+    print("Detected start time:", start_time, "UTC")
 
     with open(args.chronological_analysis, 'r') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
@@ -195,7 +197,8 @@ def create_initial_state(args, extra):
         'cars': {},
         'session': {
             'flagState': 'green'
-        }
+        },
+        'messages': []
     }
     with open(args.chronological_analysis, 'r') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
@@ -245,7 +248,7 @@ def get_start_time(args, as_timestamp=True):
             hours=int(elapsed.group('hours') or 0),
             minutes=int(elapsed.group('minutes')),
             milliseconds=float(elapsed.group('seconds')) * 1000
-        )
+        ) + timedelta(seconds=args.tz_adjustment)
 
         if as_timestamp:
             return calendar.timegm((ts - delta).timetuple()) + 1
