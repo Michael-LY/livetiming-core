@@ -88,12 +88,14 @@ def main():
 
         elapsed = evt_time - session_start_time
 
+        working_state['session']['timeElapsed'] = elapsed
+
         new_state = derive_state_from_working(args, working_state, state)
 
         if hasattr(args, 'duration'):
             new_state['session']['timeRemain'] = int(args.duration) - elapsed
 
-        new_state['messages'] = _generate_messages(message_generators, evt_time, state, new_state)
+        new_state['messages'] = _generate_messages(message_generators, evt_time * 1000, state, new_state)
 
         if evt_time > next_frame_threshold:
             calculate_gap_and_int(args.colspec, new_state)
