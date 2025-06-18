@@ -60,7 +60,7 @@ def main():
         state['session']['timeRemain'] = args.duration
 
     recorder = DirectoryTimingRecorder(args.output)
-    my_uuid = uuid.uuid4().hex
+    my_uuid = str(uuid.uuid4())
     recorder.writeManifest({
         'description': args.description,
         'name': args.name,
