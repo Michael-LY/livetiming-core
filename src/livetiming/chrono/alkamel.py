@@ -32,6 +32,7 @@ FLAG_MAP = {
     'GF': 'green',
     'SF': 'sc',
     'FCY': 'fcy',
+    'RF': 'red',
     'FF': 'chequered'
 }
 
@@ -117,7 +118,6 @@ def generate_parser_args(parser):
 def create_events(args):
     events = []
 
-    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     start_time = get_start_time(args, False)
 
     with open(args.chronological_analysis, 'r') as csvfile:
@@ -130,19 +130,10 @@ def create_events(args):
         for row in reader:
             race_num = row['\ufeffNUMBER']
 
-            clock_time = _parse_clock_time(row[' HOUR'])
-
-            if clock_time:
-                ts = start_date.replace(
-                    hour=clock_time.hour,
-                    minute=clock_time.minute,
-                    second=clock_time.second,
-                    microsecond=clock_time.microsecond
-                )
-                datestamp = float(calendar.timegm(ts.timetuple())) + (clock_time.microsecond / 1000000.0)
-            else:
-                ts = _parse_clock_from_elapsed(start_time, row[' ELAPSED'])
-                datestamp = float(calendar.timegm(ts.timetuple())) + (ts.microsecond / 1000000.0)
+            # clock_time can't be used for determining time elapsed as some events
+            # span midnight!
+            ts = _parse_clock_from_elapsed(start_time, row[' ELAPSED'])
+            datestamp = float(calendar.timegm(ts.timetuple())) + (ts.microsecond / 1000000.0)
 
             if 'FLAG_AT_FL' in row:
                 flag_records.append([datestamp, row['FLAG_AT_FL']])
@@ -170,11 +161,11 @@ def create_events(args):
             )
 
             if row[' CROSSING_FINISH_LINE_IN_PIT'] == 'B':
-                events.append(PitInEvent(datestamp, COLSPEC, race_num))
-            else:
-                events.append(
-                    LaptimeEvent(datestamp, COLSPEC, race_num, lap_time, _parseFlags(row[' LAP_IMPROVEMENT']))
-                )
+                events.append(PitInEvent(datestamp - 30, COLSPEC, race_num, False))
+
+            events.append(
+                LaptimeEvent(datestamp, COLSPEC, race_num, lap_time, _parseFlags(row[' LAP_IMPROVEMENT']))
+            )
 
             if not prev_race_num or prev_race_num == race_num:
                 prev_row = row
