@@ -105,7 +105,6 @@ def _parse_clock_from_elapsed(start_time, elapsed):
     )
 
     munged = start_time + delta
-    print(munged)
     return munged
 
 
