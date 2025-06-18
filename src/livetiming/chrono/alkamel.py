@@ -193,12 +193,22 @@ def create_events(args):
 
 
 def create_initial_state(args, extra):
+    start_time = get_start_time(args)
     state = {
         'cars': {},
         'session': {
             'flagState': 'green'
         },
-        'messages': []
+        'messages': [
+            [
+                start_time * 1000,
+                "System",
+                "This replay was generated from timing data available from Al " +
+                "Kamel Systems. The generation process may have introduced " +
+                "inaccuracies not present in the original data.",
+                "system"
+            ]
+        ]
     }
     with open(args.chronological_analysis, 'r') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
