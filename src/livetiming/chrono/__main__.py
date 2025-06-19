@@ -103,6 +103,7 @@ def main():
         elapsed = evt_time - session_start_time
 
         working_state['session']['timeElapsed'] = elapsed
+        working_state['lastUpdated'] = evt_time * 1000
 
         new_state = derive_state_from_working(args, working_state)
 
@@ -131,7 +132,8 @@ def derive_state_from_working(args, working_state):
     return {
         'cars': args.sort_cars(args, list(working_state['cars'].values())),
         'session': working_state['session'],
-        'messages': working_state.get('messages', [])
+        'messages': working_state.get('messages', []),
+        'lastUpdated': working_state['lastUpdated']
     }
 
 

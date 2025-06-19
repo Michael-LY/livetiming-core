@@ -208,7 +208,8 @@ def create_initial_state(args, extra):
                 "inaccuracies not present in the original data.",
                 "system"
             ]
-        ]
+        ],
+        'lastUpdated': start_time * 1000
     }
     with open(args.chronological_analysis, 'r') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
