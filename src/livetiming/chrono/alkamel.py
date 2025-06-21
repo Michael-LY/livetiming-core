@@ -7,7 +7,8 @@ import calendar
 import csv
 import re
 
-
+# Note: definition of these stats has changed in more recent T71, so analysis may
+# fail to detect columns properly if the old definitions are used...
 COLSPEC = [
     Stat.NUM,
     Stat.STATE,

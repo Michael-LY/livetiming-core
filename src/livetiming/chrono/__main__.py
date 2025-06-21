@@ -75,15 +75,17 @@ def main():
 
     recorder = DirectoryTimingRecorder(args.output)
     my_uuid = str(uuid.uuid4())
+    session_start_time = args.get_start_time(args)
+
     recorder.writeManifest({
         'description': args.description,
         'name': args.name,
         'uuid': my_uuid,
         'colSpec': [s.value if isinstance(s, Stat) else s for s in args.colspec],
-        'hidden': True
+        'hidden': True,
+        'startTime': session_start_time
     })
 
-    session_start_time = args.get_start_time(args)
     next_frame_threshold = 0
     recorder.writeState(state, session_start_time)
 
@@ -116,6 +118,7 @@ def main():
 
         if evt_time > next_frame_threshold and evt_time >= session_start_time:
             calculate_gap_and_int(args.colspec, new_state)
+            new_state['cars'] = list(map(exclude_tail, new_state.get('cars', [])))
             recorder.writeState(new_state, int(evt_time))
             next_frame_threshold = evt_time + 1
 
@@ -204,5 +207,8 @@ def _generate_messages(generators, timestamp, old_state, new_state):
 
     return new_messages
 
+
+def exclude_tail(arr):
+    return arr[0:-1]
 
 main()
